@@ -32,6 +32,8 @@ use worker::*;
 
 const HOSTNAME: &str = "webicon.ariscript.org";
 const ALLOWED_ORIGINS: &str = "*.ariscript.org";
+const CACHE_CONTROL: &str =
+    "public, s-maxage=604800, stale-while-revalidate=86400";
 
 fn router() -> Router {
     Router::new()
@@ -53,12 +55,14 @@ async fn fetch(
 pub async fn root(Path(url): Path<String>) -> impl IntoResponse {
     // Needs to return 200 even on failure since otherwise the icon won't
     // be shown.
+
     match icon(&url).await {
         Ok(img) => (
             StatusCode::OK,
             [
                 ("Content-Type", "image/png"),
                 ("Access-Control-Allow-Origin", ALLOWED_ORIGINS),
+                ("Cache-Control", CACHE_CONTROL),
             ],
             img,
         ),
@@ -67,6 +71,7 @@ pub async fn root(Path(url): Path<String>) -> impl IntoResponse {
             [
                 ("Content-Type", "image/svg+xml"),
                 ("Access-Control-Allow-Origin", "*"),
+                ("Cache-Control", CACHE_CONTROL),
             ],
             include_bytes!("fallback.svg").into(),
         ),
