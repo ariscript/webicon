@@ -1,0 +1,7 @@
+[toolchain]
+# `wasm-bindgen` needs to update in order to use a newer compiler version.
+# 1.78 breaks the Fetch API, and 1.82 broke something else that I forgot.
+# Both deepend on an update to `wasm-bindgen` that is currently in-dev.
+channel = "1.77.2"
+components = ["rustfmt", "clippy"]
+targets = ["wasm32-unknown-unknown"]

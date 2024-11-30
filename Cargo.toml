@@ -1,0 +1,30 @@
+[package]
+name = "webicon"
+description = "Fetch a given website's favicon"
+repository = "https://github.com/ariscript/webicon"
+license = "AGPL-3.0-or-later"
+version = "0.1.0"
+edition = "2021"
+authors = ["Ari Prakash <ariprakash16@gmail.com>"]
+
+[package.metadata.release]
+release = false
+
+# https://github.com/rustwasm/wasm-pack/issues/1247
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+worker = { version = "0.4.2", features = ['http', 'axum'] }
+worker-macros = { version = "0.4.2", features = ['http'] }
+axum = { version = "0.7", default-features = false, features = ["macros"] }
+tower-service = "0.3.2"
+console_error_panic_hook = { version = "0.1.1" }
+scraper = "0.21.0"
+url = "2.5.4"
+reqwest = "0.12.9"
+getrandom = { version = "0.2", features = ["js"] }
+image = "0.25.5"
