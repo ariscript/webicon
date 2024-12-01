@@ -5,7 +5,7 @@ repository = "https://github.com/ariscript/webicon"
 license = "AGPL-3.0-or-later"
 version = "0.1.0"
 edition = "2021"
-authors = ["Ari Prakash <ariprakash16@gmail.com>"]
+authors = ["Ari Prakash"]
 
 [package.metadata.release]
 release = false
@@ -28,3 +28,10 @@ url = "2.5.4"
 reqwest = "0.12.9"
 getrandom = { version = "0.2", features = ["js"] }
 image = "0.25.5"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tokio = { version = "1.41.1", features = ["net", "macros"] }
+axum = { version = "0.7", default-features = true, features = [
+    "tokio",
+    "http1",
+] }

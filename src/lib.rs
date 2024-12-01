@@ -22,12 +22,15 @@
 use std::{error::Error, io::Cursor};
 
 use axum::{
-    extract::Path, http::StatusCode, response::IntoResponse, routing::get,
+    extract::Path,
+    http::{HeaderMap, StatusCode},
+    response::IntoResponse,
+    routing::get,
     Router,
 };
 use image::{codecs::png::PngEncoder, ImageReader};
+use reqwest::{header::USER_AGENT, Client};
 use scraper::{Html, Selector};
-use tower_service::Service;
 use worker::*;
 
 const HOSTNAME: &str = "webicon.ariscript.org";
@@ -35,12 +38,13 @@ const ALLOWED_ORIGINS: &str = "*.ariscript.org";
 const CACHE_CONTROL: &str =
     "public, s-maxage=604800, stale-while-revalidate=86400";
 
-fn router() -> Router {
+pub fn router() -> Router {
     Router::new()
         .route("/favicon.ico", get(favicon))
         .route("/*url", get(root))
 }
 
+#[cfg(target_arch = "wasm32")]
 #[event(fetch)]
 #[allow(clippy::no_effect_underscore_binding)]
 async fn fetch(
@@ -48,6 +52,8 @@ async fn fetch(
     _env: Env,
     _ctx: Context,
 ) -> Result<axum::http::Response<axum::body::Body>> {
+    use tower_service::Service;
+
     console_error_panic_hook::set_once();
     Ok(router().call(req).await?)
 }
@@ -56,7 +62,15 @@ pub async fn root(Path(url): Path<String>) -> impl IntoResponse {
     // Needs to return 200 even on failure since otherwise the icon won't
     // be shown.
 
-    match icon(&url).await {
+    let mut headers = HeaderMap::with_capacity(1);
+    headers.append(USER_AGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36".parse().expect("this is a valid header"));
+
+    let client = reqwest::Client::builder()
+        .default_headers(headers)
+        .build()
+        .expect("client should build");
+
+    match icon(&url, &client).await {
         Ok(img) => (
             StatusCode::OK,
             [
@@ -66,10 +80,10 @@ pub async fn root(Path(url): Path<String>) -> impl IntoResponse {
             ],
             img,
         ),
-        Err(_) => (
+        Err(e) => (
             StatusCode::OK,
             [
-                ("Content-Type", "image/svg+xml"),
+                ("Content-Type", "text/plain"),
                 ("Access-Control-Allow-Origin", "*"),
                 ("Cache-Control", CACHE_CONTROL),
             ],
@@ -88,7 +102,10 @@ pub async fn favicon() -> impl IntoResponse {
 // there _are no other threads_, unless Cloudflare changes this, which should
 // surely be an opt-in feature.
 #[worker::send]
-async fn icon(url: &str) -> std::result::Result<Vec<u8>, Box<dyn Error>> {
+async fn icon(
+    url: &str,
+    client: &Client,
+) -> std::result::Result<Vec<u8>, Box<dyn Error>> {
     let url = Url::parse(url)?;
 
     if url.host_str().is_some_and(|h| h == HOSTNAME) {
@@ -98,7 +115,7 @@ async fn icon(url: &str) -> std::result::Result<Vec<u8>, Box<dyn Error>> {
         )) as Box<dyn Error>);
     }
 
-    let html = Fetch::Url(url.clone()).send().await?.text().await?;
+    let html = client.get(url.as_str()).send().await?.text().await?;
 
     let doc = Html::parse_document(&html);
     let selectors = [
@@ -116,16 +133,21 @@ async fn icon(url: &str) -> std::result::Result<Vec<u8>, Box<dyn Error>> {
         .collect();
 
     for icon_url in icon_urls {
-        if let Ok(i) = url_to_icon(icon_url).await {
+        if let Ok(i) = url_to_icon(icon_url, client).await {
             return Ok(i);
         }
     }
 
-    url_to_icon(url.join("/favicon.ico")?).await
+    url_to_icon(url.join("/favicon.ico")?, client).await
 }
 
-async fn url_to_icon(url: Url) -> std::result::Result<Vec<u8>, Box<dyn Error>> {
-    let buf = Fetch::Url(url).send().await?.bytes().await?;
+async fn url_to_icon(
+    url: Url,
+    client: &Client,
+) -> std::result::Result<Vec<u8>, Box<dyn Error>> {
+    let buf: Vec<u8> =
+        client.get(url.as_str()).send().await?.bytes().await?.into();
+
     let mut out = Vec::with_capacity(buf.capacity());
     let encoder = PngEncoder::new(&mut out);
 
