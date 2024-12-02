@@ -28,6 +28,8 @@ url = "2.5.4"
 reqwest = "0.12.9"
 getrandom = { version = "0.2", features = ["js"] }
 image = "0.25.5"
+tower-http = { version = "0.6.2", features = ["cors"] }
+http = "1.1.0"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tokio = { version = "1.41.1", features = ["net", "macros"] }
