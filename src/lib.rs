@@ -59,9 +59,6 @@ async fn fetch(
 }
 
 pub async fn root(Path(url): Path<String>) -> impl IntoResponse {
-    // Needs to return 200 even on failure since otherwise the icon won't
-    // be shown.
-
     let mut headers = HeaderMap::with_capacity(1);
     headers.append(USER_AGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36".parse().expect("this is a valid header"));
 
@@ -81,13 +78,13 @@ pub async fn root(Path(url): Path<String>) -> impl IntoResponse {
             img,
         ),
         Err(e) => (
-            StatusCode::OK,
+            StatusCode::NOT_FOUND,
             [
                 ("Content-Type", "text/plain"),
                 ("Access-Control-Allow-Origin", "*"),
                 ("Cache-Control", CACHE_CONTROL),
             ],
-            include_bytes!("fallback.svg").into(),
+            format!("{e:?}").into(),
         ),
     }
 }
