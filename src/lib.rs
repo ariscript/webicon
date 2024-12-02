@@ -1,4 +1,4 @@
-//! Webicon: Fetch a given website's favicon.
+//! Webicon: Fetch facvicons "fast".
 //!
 //! Copyright (C) 2024 Ari Prakash
 //!

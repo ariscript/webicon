@@ -1,6 +1,6 @@
 # webicon
 
-Get a website's favicon "quickly".
+Fetch favicons "fast".
 
 Inspired by
 [11ty's IndieWeb Avatar](https://www.11ty.dev/docs/services/indieweb-avatar/)
