@@ -34,7 +34,7 @@ use scraper::{Html, Selector};
 use worker::*;
 
 const HOSTNAME: &str = "webicon.ariscript.org";
-const ALLOWED_ORIGINS: &str = "https://ariscript.org";
+const ALLOWED_ORIGINS: &str = "https://ari.foo";
 const CACHE_CONTROL: &str =
     "public, s-maxage=604800, stale-while-revalidate=86400";
 
